@@ -49,40 +49,78 @@ except FileNotFoundError:
 # 3. INTERACTIVE RISK INPUT SIDEBAR (BATCH MODE)
 # ==========================================
 st.sidebar.header("📋 Borrower Risk Profile Inputs")
-st.sidebar.markdown("Modify the indicators and click **Run Assessment** to evaluate:")
 
-# Wrap ALL elements strictly inside the form using standard st. instead of st.sidebar.
+# --- DEMO SCENARIOS FOR PRESENTATION ---
+st.sidebar.subheader("🚀 Quick Demo Presets")
+demo_selection = st.sidebar.selectbox(
+    "Select a scenario to test responsiveness:",
+    ["Manual Adjustment", "Scenario A: Low-Risk Prime Client", "Scenario B: High-Risk Delinquent Client"]
+)
+
+# Set baseline defaults
+default_sex = "Female"
+default_edu = "Graduate School"
+default_mar = "Married"
+default_age = 35
+default_limit = 150000
+default_pay1 = 0
+default_pay2 = 0
+default_bill = 12000
+default_pay_amt = 5000
+
+# Override defaults based on selection
+if demo_selection == "Scenario A: Low-Risk Prime Client":
+    default_sex = "Male"
+    default_edu = "Graduate School"
+    default_mar = "Married"
+    default_age = 42
+    default_limit = 300000
+    default_pay1 = -1  # Paid in full
+    default_pay2 = -1
+    default_bill = 5000
+    default_pay_amt = 5000
+elif demo_selection == "Scenario B: High-Risk Delinquent Client":
+    default_sex = "Female"
+    default_edu = "High School"
+    default_mar = "Single"
+    default_age = 28
+    default_limit = 20000
+    default_pay1 = 2   # 2 Months payment delay
+    default_pay2 = 1   # 1 Month payment delay
+    default_bill = 18000
+    default_pay_amt = 0  # No payment made
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("Modify the indicators below and click **Run Assessment**:")
+
 with st.sidebar.form(key="risk_input_form"):
     
-    # --- Demographic & Socioeconomic Features ---
     st.subheader("👤 Demographic Profile")
-    sex_label = st.selectbox("Gender / Sex", ["Female", "Male"])
+    sex_label = st.selectbox("Gender / Sex", ["Female", "Male"], index=["Female", "Male"].index(default_sex))
     sex = 1 if sex_label == "Male" else 2
 
-    edu_label = st.selectbox(
-        "Highest Education Level", 
-        ["Graduate School", "University", "High School", "Others"]
-    )
+    edu_options = ["Graduate School", "University", "High School", "Others"]
+    edu_label = st.selectbox("Highest Education Level", edu_options, index=edu_options.index(default_edu))
     edu_mapping = {"Graduate School": 1, "University": 2, "High School": 3, "Others": 4}
     education = edu_mapping[edu_label]
 
-    mar_label = st.selectbox("Marital Status", ["Married", "Single"])
+    mar_options = ["Married", "Single"]
+    mar_label = st.selectbox("Marital Status", mar_options, index=mar_options.index(default_mar))
     mar_mapping = {"Married": 1, "Single": 2}
     marriage = mar_mapping[mar_label]
 
-    age = st.slider("Borrower Age", min_value=18, max_value=80, value=35)
+    age = st.slider("Borrower Age", min_value=18, max_value=80, value=default_age)
 
     # --- Financial Exposure & History ---
     st.subheader("📈 Financial Exposure & History")
-    limit_bal = st.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=50000, step=10000)
+    limit_bal = st.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=default_limit, step=10000)
 
-    pay_1 = st.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=0)
-    pay_2 = st.slider("Repayment Status (Previous Month)", min_value=-2, max_value=8, value=0)
+    pay_1 = st.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=default_pay1)
+    pay_2 = st.slider("Repayment Status (Previous Month)", min_value=-2, max_value=8, value=default_pay2)
 
-    bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=12000)
-    pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=3000)
+    bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=default_bill)
+    pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=default_pay_amt)
     
-    # This single submit button controls the whole form layout
     submit_button = st.form_submit_button(label="⚡ Run Risk Assessment", use_container_width=True)
 
 # ==========================================
