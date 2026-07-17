@@ -67,16 +67,20 @@ scenarios = {
     10: {"name": "Scenario 10: Chronic Delinquency (Default)", "sex": "Female", "edu": "High School", "mar": "Married", "age": 31, "limit": 10000, "pay1": 2, "pay2": 2, "bill": 9000, "pay_amt": 0}
 }
 
+preset_submit = False
+
 if use_preset:
     scenario_id = st.sidebar.slider("Select Scenario ID (1-6: Safe, 7-10: Default)", min_value=1, max_value=10, value=1, step=1)
     selected = scenarios[scenario_id]
     st.sidebar.info(f"**Loaded:** {selected['name']}")
     
+    # QUICK EXECUTION BUTTON: Runs the model directly from the preset context
+    preset_submit = st.sidebar.button(label="⚡ Run Selected Scenario", use_container_width=True, type="primary")
+    
     # Map variables to current selection
     default_sex, default_edu, default_mar, default_age = selected["sex"], selected["edu"], selected["mar"], selected["age"]
     default_limit, default_pay1, default_pay2, default_bill, default_pay_amt = selected["limit"], selected["pay1"], selected["pay2"], selected["bill"], selected["pay_amt"]
 else:
-    # Free manual mode fallbacks
     st.sidebar.warning("Manual mode active. Adjust sliders freely below.")
     default_sex, default_edu, default_mar, default_age = "Female", "Graduate School", "Married", 35
     default_limit, default_pay1, default_pay2, default_bill, default_pay_amt = 50000, 0, 0, 12000, 3000
@@ -110,7 +114,10 @@ with st.sidebar.form(key="risk_input_form"):
     bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=int(default_bill))
     pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=int(default_pay_amt))
     
-    submit_button = st.form_submit_button(label="⚡ Run Risk Assessment", use_container_width=True)
+    form_submit = st.form_submit_button(label="⚡ Run Custom Assessment", use_container_width=True)
+
+# Combine triggers so either button fires the prediction engine
+submit_button = form_submit or preset_submit
 
 # ==========================================
 # 4. DATA TRANSFORMATION & PREDICTION ENGINE
