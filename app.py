@@ -143,26 +143,26 @@ if submit_button:
         else:
             st.info("💼 **Operational Overhead:** If this borrower eventually defaults, it will incur an unmitigated **$400** risk cost.")
             
+    # ==========================================
+    # 6. UNDERWRITING SYSTEM DIAGNOSTICS (MOVED INSIDE)
+    # ==========================================
+    st.write("---")
+    st.subheader("🛠️ Underwriting System Diagnostics")
+    with st.expander("Click to view processed model vector arrays"):
+        
+        feature_columns = [
+            "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", 
+            "PAY_0", "PAY_2", "BILL_AMT1", "PAY_AMT1"
+        ]
+        
+        input_df = pd.DataFrame(raw_features, columns=feature_columns)
+        
+        st.write("**Processed Pipeline Input Vector (Aligned to Model Schema):**")
+        st.dataframe(input_df, use_container_width=True)
+        
+        st.write("**Raw Model Log-Odds Output Probabilities:**")
+        st.code(f"[Healthy (Non-Default): {1-risk_probability:.4f}, Default: {risk_probability:.4f}]")
+            
 else:
     # This shows cleanly on startup until they click the button
     st.info("👈 Adjust the borrower risk profile parameters in the sidebar and click **⚡ Run Risk Assessment** to calculate the underwriting metrics.")
-
-# ==========================================
-# 6. UNDERWRITING SYSTEM DIAGNOSTICS
-# ==========================================
-st.write("---")
-st.subheader("🛠️ Underwriting System Diagnostics")
-with st.expander("Click to view processed model vector arrays"):
-    
-    feature_columns = [
-        "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", 
-        "PAY_0", "PAY_2", "BILL_AMT1", "PAY_AMT1"
-    ]
-    
-    input_df = pd.DataFrame(raw_features, columns=feature_columns)
-    
-    st.write("**Processed Pipeline Input Vector (Aligned to Model Schema):**")
-    st.dataframe(input_df, use_container_width=True)
-    
-    st.write("**Raw Model Log-Odds Output Probabilities:**")
-    st.code(f"[Healthy (Non-Default): {1-risk_probability:.4f}, Default: {risk_probability:.4f}]")
