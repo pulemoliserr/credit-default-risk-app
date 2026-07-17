@@ -46,55 +46,44 @@ except FileNotFoundError:
     is_mock = True
 
 # ==========================================
-# 3. INTERACTIVE RISK INPUT SIDEBAR (BATCH MODE)
+# 3. INTERACTIVE RISK INPUT SIDEBAR (10-SCENARIO TESTING ENGINE)
 # ==========================================
 st.sidebar.header("📋 Borrower Risk Profile Inputs")
 
-# --- DEMO SCENARIOS FOR PRESENTATION ---
-st.sidebar.subheader("🚀 Quick Demo Presets")
-demo_selection = st.sidebar.selectbox(
-    "Select a scenario to test responsiveness:",
-    ["Manual Adjustment", "Scenario A: Low-Risk Prime Client", "Scenario B: High-Risk Delinquent Client"]
-)
+st.sidebar.subheader("🚀 Presentation Scenario Matrix")
+use_preset = st.sidebar.checkbox("Enable Presentation Mode Presets", value=True)
 
-# Set baseline defaults
-default_sex = "Female"
-default_edu = "Graduate School"
-default_mar = "Married"
-default_age = 35
-default_limit = 150000
-default_pay1 = 0
-default_pay2 = 0
-default_bill = 12000
-default_pay_amt = 5000
+# Define the dictionary of 10 hyper-realistic clinical profiles
+scenarios = {
+    1: {"name": "Scenario 1: Prime Executive (Non-Default)", "sex": "Male", "edu": "Graduate School", "mar": "Married", "age": 45, "limit": 400000, "pay1": -1, "pay2": -1, "bill": 15000, "pay_amt": 15000},
+    2: {"name": "Scenario 2: Young Professional (Non-Default)", "sex": "Female", "edu": "University", "mar": "Single", "age": 26, "limit": 80000, "pay1": 0, "pay2": 0, "bill": 12000, "pay_amt": 4000},
+    3: {"name": "Scenario 3: Medical Doctor (Non-Default)", "sex": "Male", "edu": "Graduate School", "mar": "Married", "age": 39, "limit": 500000, "pay1": 0, "pay2": 0, "bill": 145000, "pay_amt": 120000},
+    4: {"name": "Scenario 4: Mature Conservative (Non-Default)", "sex": "Female", "edu": "High School", "mar": "Married", "age": 52, "limit": 150000, "pay1": -2, "pay2": -2, "bill": 0, "pay_amt": 0},
+    5: {"name": "Scenario 5: Corporate Consultant (Non-Default)", "sex": "Male", "edu": "University", "mar": "Single", "age": 33, "limit": 250000, "pay1": 0, "pay2": -1, "bill": 32000, "pay_amt": 35000},
+    6: {"name": "Scenario 6: Entry Starter Card (Non-Default)", "sex": "Female", "edu": "University", "mar": "Single", "age": 22, "limit": 30000, "pay1": 0, "pay2": 0, "bill": 4500, "pay_amt": 2000},
+    7: {"name": "Scenario 7: Over-Leveraged High Risk (Default)", "sex": "Male", "edu": "High School", "mar": "Single", "age": 25, "limit": 20000, "pay1": 2, "pay2": 2, "bill": 19500, "pay_amt": 0},
+    8: {"name": "Scenario 8: High Income Distress (Default)", "sex": "Female", "edu": "Graduate School", "mar": "Married", "age": 41, "limit": 300000, "pay1": 3, "pay2": 2, "bill": 280000, "pay_amt": 5000},
+    9: {"name": "Scenario 9: Maxed Out Liquidity Trap (Default)", "sex": "Male", "edu": "University", "mar": "Single", "age": 29, "limit": 50000, "pay1": 1, "pay2": 0, "bill": 49000, "pay_amt": 1000},
+    10: {"name": "Scenario 10: Chronic Delinquency (Default)", "sex": "Female", "edu": "High School", "mar": "Married", "age": 31, "limit": 10000, "pay1": 2, "pay2": 2, "bill": 9000, "pay_amt": 0}
+}
 
-# Override defaults based on selection
-if demo_selection == "Scenario A: Low-Risk Prime Client":
-    default_sex = "Male"
-    default_edu = "Graduate School"
-    default_mar = "Married"
-    default_age = 42
-    default_limit = 300000
-    default_pay1 = -1  # Paid in full
-    default_pay2 = -1
-    default_bill = 5000
-    default_pay_amt = 5000
-elif demo_selection == "Scenario B: High-Risk Delinquent Client":
-    default_sex = "Female"
-    default_edu = "High School"
-    default_mar = "Single"
-    default_age = 28
-    default_limit = 20000
-    default_pay1 = 2   # 2 Months payment delay
-    default_pay2 = 1   # 1 Month payment delay
-    default_bill = 18000
-    default_pay_amt = 0  # No payment made
+if use_preset:
+    scenario_id = st.sidebar.slider("Select Scenario ID (1-6: Safe, 7-10: Default)", min_value=1, max_value=10, value=1, step=1)
+    selected = scenarios[scenario_id]
+    st.sidebar.info(f"**Loaded:** {selected['name']}")
+    
+    # Map variables to current selection
+    default_sex, default_edu, default_mar, default_age = selected["sex"], selected["edu"], selected["mar"], selected["age"]
+    default_limit, default_pay1, default_pay2, default_bill, default_pay_amt = selected["limit"], selected["pay1"], selected["pay2"], selected["bill"], selected["pay_amt"]
+else:
+    # Free manual mode fallbacks
+    st.sidebar.warning("Manual mode active. Adjust sliders freely below.")
+    default_sex, default_edu, default_mar, default_age = "Female", "Graduate School", "Married", 35
+    default_limit, default_pay1, default_pay2, default_bill, default_pay_amt = 50000, 0, 0, 12000, 3000
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("Modify the indicators below and click **Run Assessment**:")
 
 with st.sidebar.form(key="risk_input_form"):
-    
     st.subheader("👤 Demographic Profile")
     sex_label = st.selectbox("Gender / Sex", ["Female", "Male"], index=["Female", "Male"].index(default_sex))
     sex = 1 if sex_label == "Male" else 2
@@ -113,13 +102,13 @@ with st.sidebar.form(key="risk_input_form"):
 
     # --- Financial Exposure & History ---
     st.subheader("📈 Financial Exposure & History")
-    limit_bal = st.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=default_limit, step=10000)
+    limit_bal = st.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=int(default_limit), step=10000)
 
-    pay_1 = st.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=default_pay1)
-    pay_2 = st.slider("Repayment Status (Previous Month)", min_value=-2, max_value=8, value=default_pay2)
+    pay_1 = st.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=int(default_pay1))
+    pay_2 = st.slider("Repayment Status (Previous Month)", min_value=-2, max_value=8, value=int(default_pay2))
 
-    bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=default_bill)
-    pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=default_pay_amt)
+    bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=int(default_bill))
+    pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=int(default_pay_amt))
     
     submit_button = st.form_submit_button(label="⚡ Run Risk Assessment", use_container_width=True)
 
