@@ -93,52 +93,66 @@ raw_features = np.array([[
     pay_1, pay_2, bill_amt1, pay_amt1
 ]])
 
-if not is_mock and scaler is not None:
-    scaled_features = scaler.transform(raw_features)
-    risk_probabilities = model.predict_proba(scaled_features)[0]
-    risk_probability = risk_probabilities[1]
-    risk_verdict = model.predict(scaled_features)[0]
-else:
-    if pay_1 > 1 or pay_2 > 1:
-        risk_probability = 0.84 + (pay_1 * 0.02) 
+# Initialize session state variables so the main page doesn't break on initial load
+if "calculated" not in st.session_state:
+    st.session_state.calculated = False
+    st.session_state.prob = 0.0
+    st.session_state.verdict = 0
+
+# ONLY compute when the button is clicked. This freezes the UI during slider adjustments!
+if submit_button or st.session_state.calculated:
+    st.session_state.calculated = True
+    
+    if not is_mock and scaler is not None:
+        scaled_features = scaler.transform(raw_features)
+        risk_probabilities = model.predict_proba(scaled_features)[0]
+        st.session_state.prob = float(risk_probabilities[1])
+        st.session_state.verdict = int(model.predict(scaled_features)[0])
     else:
-        risk_probability = 0.10 + (age * 0.001) + (education * 0.02) + (pay_1 * 0.05)
-    risk_probability = min(float(risk_probability), 0.99)
-    risk_verdict = 1 if risk_probability >= 0.5 else 0
+        # Presentation fallback logic handled cleanly
+        if pay_1 > 1 or pay_2 > 1:
+            local_prob = 0.84 + (pay_1 * 0.02) 
+        else:
+            local_prob = 0.10 + (age * 0.001) + (education * 0.02) + (pay_1 * 0.05)
+        st.session_state.prob = min(float(local_prob), 0.99)
+        st.session_state.verdict = 1 if st.session_state.prob >= 0.5 else 0
 
 # ==========================================
 # 5. RISK ASSESSMENT & MANAGEMENT DISPLAY
 # ==========================================
-col1, col2 = st.columns([2, 1])
+if st.session_state.calculated:
+    col1, col2 = st.columns([2, 1])
 
-with col1:
-    st.subheader("📊 Operational Risk Analysis")
-    
-    prob_percentage = risk_probability * 100
-    st.metric(
-        label="Calculated Default Probability", 
-        value=f"{prob_percentage:.2f}%", 
-        delta="- Safe Territory" if risk_verdict == 0 else "+ High Exposure Alert",
-        delta_color="inverse"
-    )
-    
-    if risk_verdict == 0:
-        st.success("🟢 **CREDIT VERDICT: APPROVED** — This profile exhibits stable repayment dynamics matching a non-default trajectory.")
-    else:
-        st.error("🔴 **CREDIT VERDICT: REJECTED** — High probability of imminent default detected. Automated underwriting recommends withholding credit extension.")
+    with col1:
+        st.subheader("📊 Operational Risk Analysis")
+        
+        prob_percentage = st.session_state.prob * 100
+        st.metric(
+            label="Calculated Default Probability", 
+            value=f"{prob_percentage:.2f}%", 
+            delta="- Safe Territory" if st.session_state.verdict == 0 else "+ High Exposure Alert",
+            delta_color="inverse"
+        )
+        
+        if st.session_state.verdict == 0:
+            st.success("🟢 **CREDIT VERDICT: APPROVED** — This profile exhibits stable repayment dynamics matching a non-default trajectory.")
+        else:
+            st.error("🔴 **CREDIT VERDICT: REJECTED** — High probability of imminent default detected. Automated underwriting recommends withholding credit extension.")
 
-with col2:
-    st.subheader("💰 Cost Matrix Framework")
-    st.markdown("""
-    Under Professor Oziel's underwriting constraints, errors carry asymmetric financial penalties:
-    * **Type I Error (False Alarm):** $100  
-    * **Type II Error (Missed Default):** $400  
-    """)
-    
-    if risk_verdict == 1:
-        st.warning("🛡️ **Capital Hedged:** Rejecting this borrower shields the bank from a potential **$400** Type II operational loss.")
-    else:
-        st.info("💼 **Operational Overhead:** If this borrower eventually defaults, it will incur an unmitigated **$400** risk cost.")
+    with col2:
+        st.subheader("💰 Cost Matrix Framework")
+        st.markdown("""
+        Under Professor Oziel's underwriting constraints, errors carry asymmetric financial penalties:
+        * **Type I Error (False Alarm):** $100  
+        * **Type II Error (Missed Default):** $400  
+        """)
+        
+        if st.session_state.verdict == 1:
+            st.warning("🛡️ **Capital Hedged:** Rejecting this borrower shields the bank from a potential **$400** Type II operational loss.")
+        else:
+            st.info("💼 **Operational Overhead:** If this borrower eventually defaults, it will incur an unmitigated **$400** risk cost.")
+else:
+    st.info("👈 Adjust the borrower risk profile parameters in the sidebar and click **⚡ Run Risk Assessment** to display the underwriting metrics.")
 
 # ==========================================
 # 6. UNDERWRITING SYSTEM DIAGNOSTICS
