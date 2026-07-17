@@ -51,11 +51,11 @@ except FileNotFoundError:
 st.sidebar.header("📋 Borrower Risk Profile Inputs")
 st.sidebar.markdown("Modify the indicators and click **Run Assessment** to evaluate:")
 
-# Wrap all inputs in a form to prevent live slider lag
+# Wrap ALL elements strictly inside the form using standard st. instead of st.sidebar.
 with st.sidebar.form(key="risk_input_form"):
     
     # --- Demographic & Socioeconomic Features ---
-    st.sidebar.subheader("👤 Demographic Profile")
+    st.subheader("👤 Demographic Profile")
     sex_label = st.selectbox("Gender / Sex", ["Female", "Male"])
     sex = 1 if sex_label == "Male" else 2
 
@@ -66,7 +66,6 @@ with st.sidebar.form(key="risk_input_form"):
     edu_mapping = {"Graduate School": 1, "University": 2, "High School": 3, "Others": 4}
     education = edu_mapping[edu_label]
 
-    # CLEANED DROPDOWN: Removed "Others" for strict feature mapping consistency
     mar_label = st.selectbox("Marital Status", ["Married", "Single"])
     mar_mapping = {"Married": 1, "Single": 2}
     marriage = mar_mapping[mar_label]
@@ -74,7 +73,7 @@ with st.sidebar.form(key="risk_input_form"):
     age = st.slider("Borrower Age", min_value=18, max_value=80, value=35)
 
     # --- Financial Exposure & History ---
-    st.sidebar.subheader("📈 Financial Exposure & History")
+    st.subheader("📈 Financial Exposure & History")
     limit_bal = st.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=50000, step=10000)
 
     pay_1 = st.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=0)
@@ -83,7 +82,7 @@ with st.sidebar.form(key="risk_input_form"):
     bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=12000)
     pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=3000)
     
-    # Submit button that unlocks fast execution
+    # This single submit button controls the whole form layout
     submit_button = st.form_submit_button(label="⚡ Run Risk Assessment", use_container_width=True)
 
 # ==========================================
