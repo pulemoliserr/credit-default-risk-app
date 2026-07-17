@@ -167,7 +167,7 @@ if submit_button:
     with col2:
         st.subheader("💰 Cost Matrix Framework")
         st.markdown("""
-        Under Professor Oziel's underwriting constraints, errors carry asymmetric financial penalties:
+        As we learnt from the SECOM project, errors carry asymmetric financial penalties:
         * **Type I Error (False Alarm):** $100  
         * **Type II Error (Missed Default):** $400  
         """)
