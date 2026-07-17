@@ -26,17 +26,14 @@ st.write("---")
 # ==========================================
 @st.cache_resource
 def load_production_pipeline():
-    # Load your serialized binaries directly from the folder
     trained_model = joblib.load('champion_xgboost_model.pkl')
     fitted_scaler = joblib.load('scaler.pkl')
     return trained_model, fitted_scaler
 
-# Try to load production model, fallback to a mock engine if files aren't in folder yet
 try:
     model, scaler = load_production_pipeline()
     is_mock = False
 except FileNotFoundError:
-    # Failsafe so the app doesn't crash before you run train_model.py
     @st.cache_resource
     def load_mock_fallback():
         mock_model = XGBClassifier(max_depth=5, n_estimators=100, random_state=42)
@@ -49,56 +46,60 @@ except FileNotFoundError:
     is_mock = True
 
 # ==========================================
-# 3. INTERACTIVE RISK INPUT SIDEBAR
+# 3. INTERACTIVE RISK INPUT SIDEBAR (BATCH MODE)
 # ==========================================
 st.sidebar.header("📋 Borrower Risk Profile Inputs")
-st.sidebar.markdown("Modify the operational indicators below to evaluate risk probability:")
+st.sidebar.markdown("Modify the indicators and click **Run Assessment** to evaluate:")
 
-# --- Demographic & Socioeconomic Features ---
-st.sidebar.subheader("👤 Demographic Profile")
-sex_label = st.sidebar.selectbox("Gender / Sex", ["Female", "Male"])
-sex = 1 if sex_label == "Male" else 2
+# Wrap all inputs in a form to prevent live slider lag
+with st.sidebar.form(key="risk_input_form"):
+    
+    # --- Demographic & Socioeconomic Features ---
+    st.sidebar.subheader("👤 Demographic Profile")
+    sex_label = st.selectbox("Gender / Sex", ["Female", "Male"])
+    sex = 1 if sex_label == "Male" else 2
 
-edu_label = st.sidebar.selectbox(
-    "Highest Education Level", 
-    ["Graduate School", "University", "High School", "Others"]
-)
-edu_mapping = {"Graduate School": 1, "University": 2, "High School": 3, "Others": 4}
-education = edu_mapping[edu_label]
+    edu_label = st.selectbox(
+        "Highest Education Level", 
+        ["Graduate School", "University", "High School", "Others"]
+    )
+    edu_mapping = {"Graduate School": 1, "University": 2, "High School": 3, "Others": 4}
+    education = edu_mapping[edu_label]
 
-mar_label = st.sidebar.selectbox("Marital Status", ["Married", "Single", "Others"])
-mar_mapping = {"Married": 1, "Single": 2, "Others": 3}
-marriage = mar_mapping[mar_label]
+    # CLEANED DROPDOWN: Removed "Others" for strict feature mapping consistency
+    mar_label = st.selectbox("Marital Status", ["Married", "Single"])
+    mar_mapping = {"Married": 1, "Single": 2}
+    marriage = mar_mapping[mar_label]
 
-age = st.sidebar.slider("Borrower Age", min_value=18, max_value=80, value=35)
+    age = st.slider("Borrower Age", min_value=18, max_value=80, value=35)
 
-# --- Financial Exposure & History ---
-st.sidebar.subheader("📈 Financial Exposure & History")
-limit_bal = st.sidebar.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=50000, step=10000)
+    # --- Financial Exposure & History ---
+    st.sidebar.subheader("📈 Financial Exposure & History")
+    limit_bal = st.number_input("Limit Balance (Credit Limit in NTD)", min_value=1000, max_value=1000000, value=50000, step=10000)
 
-pay_1 = st.sidebar.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=0)
-pay_2 = st.sidebar.slider("Repayment Status (Previous Month)", min_value=-2, max_value=8, value=0)
+    pay_1 = st.slider("Repayment Status (Current Month)", min_value=-2, max_value=8, value=0)
+    pay_2 = st.slider("Repayment Status (Previous Month)", min_value=-2, max_value=8, value=0)
 
-bill_amt1 = st.sidebar.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=12000)
-pay_amt1 = st.sidebar.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=3000)
+    bill_amt1 = st.number_input("Current Bill Amount (NTD)", min_value=-10000, max_value=500000, value=12000)
+    pay_amt1 = st.number_input("Amount Paid in Previous Month (NTD)", min_value=0, max_value=500000, value=3000)
+    
+    # Submit button that unlocks fast execution
+    submit_button = st.form_submit_button(label="⚡ Run Risk Assessment", use_container_width=True)
 
 # ==========================================
-# 4. DATA TRANSFORMATION & PRODUCTION PREDICTION
+# 4. DATA TRANSFORMATION & PREDICTION ENGINE
 # ==========================================
-# Constructing the vector matching your original training columns shape
 raw_features = np.array([[
     limit_bal, sex, education, marriage, age, 
     pay_1, pay_2, bill_amt1, pay_amt1
 ]])
 
 if not is_mock and scaler is not None:
-    # Real pipeline inference engine
     scaled_features = scaler.transform(raw_features)
     risk_probabilities = model.predict_proba(scaled_features)[0]
     risk_probability = risk_probabilities[1]
     risk_verdict = model.predict(scaled_features)[0]
 else:
-    # Presentation fallback logic if files are missing
     if pay_1 > 1 or pay_2 > 1:
         risk_probability = 0.84 + (pay_1 * 0.02) 
     else:
@@ -130,7 +131,7 @@ with col1:
 with col2:
     st.subheader("💰 Cost Matrix Framework")
     st.markdown("""
-    From SECOM Project, we learnt that errors carry asymmetric financial penalties:
+    From the SECOM Project, we learnt that errors carry asymmetric financial penalties:
     * **Type I Error (False Alarm):** $100  
     * **Type II Error (Missed Default):** $400  
     """)
